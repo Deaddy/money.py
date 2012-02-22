@@ -4,13 +4,23 @@
 #	date, context, amount
 # and functions to analyze these.
 
-from sys import argv
+from sys import argv, stderr
 
-import re
 import csv
 import datetime
+import json
+import os
+import re
 
-DBFILE="./db.csv"
+CONFIGFILE=os.path.expanduser("~/.moneypyrc")
+
+# the configuration is dictionary based, saved in json format
+# one can specify a dbfile in which the data will be logged and add budgets to
+# different tags; currently only monthly budgets are supported
+
+DEFAULTCONFIG={
+		'dbfile' : '~/.money.csv'
+		}
 
 # first some universal helper functions
 
@@ -43,12 +53,47 @@ def _prettyprint(entries):
 	print("Total: ", total)
 
 def read():
-	r = csv.DictReader(open(DBFILE), delimiter=';')
+	r = csv.DictReader(open(config['dbfile']), delimiter=';')
 	rows = []
 	for row in r:
 		rows.append(row)
 	return rows
 
+def load_config(config=CONFIGFILE):
+	"""Try to open the config file - if it does not exist, assume default
+	configuration, else exit with an error"""
+	try:
+		cfg = open(config, 'r').read()
+		return sanitize_config(json.loads(cfg))
+	except IOError as e:
+		(errno, errstr) = e.args
+		if errno == 2:
+			return DEFAULTCONFIG
+		else:
+			print("An error occured opening the configuration file '%s':"%(config),
+					file=stderr)
+			print(errstr, file=stderr)
+			exit(1)
+	except ValueError as e:
+		if e.args[0] == 'No JSON object could be decoded':
+			print("An error occured reading the configuration file '%s'; please \
+make sure it is correct JSON"%
+				(config), file=stderr)
+		else:
+			print(e)
+		exit(1)
+
+def sanitize_config(config):
+	"""Check if dbfile is set; else replace with dbfile of default
+	config. Further default values might come.
+	Also expand tilde in filepaths."""
+	if not 'dbfile' in config.keys():
+		config['dbfile'] = DEFAULTCONFIG['dbfile']
+	for path in ['dbfile']:
+		config[path]=os.path.expanduser(config[path])
+	return config
+
+		
 # here starts the real programlogic
 
 def add(args):
@@ -75,7 +120,7 @@ def add(args):
 	if not date:
 		date = datetime.date.today().isoformat()
 	if (amount != 0):
-		w = csv.DictWriter(open(DBFILE, 'a'), delimiter=';',
+		w = csv.DictWriter(open(config['dbfile'], 'a'), delimiter=';',
 			fieldnames=['date', 'amount', 'context'],
 			lineterminator='\n')
 		row = { 'date' : date, 'amount' : amount, 'context' : context }
@@ -103,6 +148,7 @@ def ls(args):
 		_prettyprint(result)
 		  
 if __name__=="__main__":
+	config = load_config()
 	if (len(argv) == 1) or (argv[1] in ["ls", "list"]):
 		ls(argv[2:])
 	elif argv[1] in ["add", "a"]:
