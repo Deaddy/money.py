@@ -22,6 +22,14 @@ DEFAULTCONFIG={
 		'dbfile' : '~/.money.csv'
 		}
 
+# some classes and datatypes or exceptions
+
+class UnknownAction(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return "Unknown Action: %s"%(self.value)
+
 # first some universal helper functions
 
 def help():
@@ -58,6 +66,21 @@ def read():
 	for row in r:
 		rows.append(row)
 	return rows
+
+def parse_arguments(args):
+	"""This function parses arguments like argv and returns a dictionary
+	with keys
+		action
+		tags
+		date : the date since which the data should be displayed.
+	Please note that it supposes the first entry of args to be the action, so if
+	you're using argv remember to start the 
+
+	It raises an UnknownAction Exception if it's asked for an action which can't
+	be performed.
+	"""
+
+
 
 def load_config(config=CONFIGFILE):
 	"""Try to open the config file - if it does not exist, assume default
@@ -96,7 +119,7 @@ def sanitize_config(config):
 		
 # here starts the real programlogic
 
-def add(args):
+def add(config, args):
 	"""requires amount, context and date are optional. If no date is present,
 	assume today."""
 	if args == []:
@@ -127,7 +150,8 @@ def add(args):
 		w.writerow(row)
 		print("added:", ';'.join([date,str(amount),context]))
 
-def ls(args):
+def ls(config, args):
+	"""lists all entries, displays the total amount and budgets if defined."""
 	result = read()
 	if args == []:
 		_prettyprint(result)
@@ -147,11 +171,20 @@ def ls(args):
 				return
 		_prettyprint(result)
 		  
+def budget(config, tag):
+	"""returns the budget for the defined tag"""
+	if tag in config["budget"].keys():
+		print(tag)
+	else:
+		print(config["budget"].keys())
+
+# 
+
 if __name__=="__main__":
 	config = load_config()
 	if (len(argv) == 1) or (argv[1] in ["ls", "list"]):
-		ls(argv[2:])
+		ls(config, argv[2:])
 	elif argv[1] in ["add", "a"]:
-		add(argv[2:])
+		add(config, argv[2:])
 	else:
 		help()
