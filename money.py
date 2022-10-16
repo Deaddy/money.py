@@ -34,7 +34,7 @@ class UnknownAction(Exception):
 
 def help():
 	helptext = """\
-Usage: add|rm|ls
+Usage: add|ls
 Additional options for ls:
 	@context1 @context2 ...
 		- filters for entries that have one of the listed contexts
