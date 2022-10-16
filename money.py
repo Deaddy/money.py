@@ -1,4 +1,4 @@
-#!/usr/bin/python3.1
+#!/usr/bin/env python3
 
 # script to store expenditures in csv with
 #	date, context, amount
