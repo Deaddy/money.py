@@ -8,6 +8,7 @@ from sys import argv, stderr
 
 import csv
 import datetime
+from dateutil.relativedelta import relativedelta
 import json
 import os
 import re
@@ -40,7 +41,9 @@ Additional options for ls:
 		- filters for entries that have one of the listed contexts
 	since date
 		- filters for entries newer than date
-	combinations of these are possible.
+	month YYYY-MM
+		- filters for entries in said month
+	time parameters exclude each other, other combinations are possible
 """
 
 	print(helptext)
@@ -72,7 +75,7 @@ def parse_arguments(args):
 	with keys
 		action
 		tags
-		date : the date since which the data should be displayed.
+		date : the date since/for which the data should be displayed.
 	Please note that it supposes the first entry of args to be the action, so if
 	you're using argv remember to start the 
 
@@ -165,8 +168,24 @@ def ls(config, args):
 				date = datetime.datetime.strptime(args[args.index("since")+1],
 				"%Y-%m-%d").strftime("%Y-%m-%d")
 				result = list(filter(lambda x: _is_newer(x["date"], date), result))
-			except(ValueError):
+			except(IndexError, ValueError):
 				print("You must use a valid date-format after since (YYYY-MM-DD)")
+				help()
+				return
+		elif "month" in args:
+			try:
+				raw_start_date = datetime.datetime.strptime(
+						args[args.index("month")+1],
+						"%Y-%m")
+				start_date = raw_start_date.strftime("%Y-%m-%d")
+				end_date = (raw_start_date +
+					 relativedelta(months=1, days=-1)).strftime("%Y-%m-%d")
+				result = list(filter(
+					lambda x: _is_newer(x["date"], start_date), result))
+				result = list(filter(
+					lambda x: _is_newer(end_date, x["date"]), result))
+			except(IndexError, ValueError):
+				print("You must use a valid date-format after month (YYYY-MM)")
 				help()
 				return
 		_prettyprint(result)

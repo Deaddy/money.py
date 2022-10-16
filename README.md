@@ -22,4 +22,5 @@ ________
 -  `money.py ls` - list all entries, can be filtered with following options:
 -  `money.py ls @tag1 @tag2 ...` - list all entries matching all tags
 -  `money.py ls since YYYY-MM-DD` - list all entries since date
+-  `money.py ls month YYYY-MM` - list all entries in given month
 
